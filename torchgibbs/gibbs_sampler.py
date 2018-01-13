@@ -56,7 +56,7 @@ class UnitCovGaussianMixture(GibbsSampler):
             print(self.log_joint_prob(xs, sampled_ks))
 
 
-class SphericalCovDirichletPriorGaussianMixture(GibbsSampler):
+class SphericalCovDirichletPriorGaussianMixture(UnitCovGaussianMixture):
     """
     bin_probs ~ Dir(concentration)
     k ~ Multi(bin_probs)
@@ -67,10 +67,14 @@ class SphericalCovDirichletPriorGaussianMixture(GibbsSampler):
 
     def __init__(self, n_dim, n_component):
         super().__init__(n_dim, n_component)
+        self.n_dim = n_dim
         self.inv_cov = Parameter(torch.FloatTensor([1.0]))
         self.mean_inv_cov_factor = 1.0
         self.mean_inv_cov_factor_shape = 1.0
         self.mean_inv_cov_scale = 1.0
+
+    def assert_inputs(self, xs, ids=None):
+        pass
 
     def sample_k(self, xs):
         pxs = normal_log_pdf(xs, self.means.data, 1.0 / self.inv_cov).exp()  # [B, K]
@@ -79,7 +83,7 @@ class SphericalCovDirichletPriorGaussianMixture(GibbsSampler):
         return torch.multinomial(pks, 1).squeeze(1)  # [B]
 
     def sample_mean(self, xs, sampled_ks, k):
-        x_k = self.select_k(xs, sampled_ks, k)  # [B, D]
+        x_k = self.sample_k(xs, sampled_ks, k)  # [B, D]
         n_k = 0 if x_k.dim() == 0 else x_k.size(0)
         x_mean_k = xs.new([0]) if x_k.dim() == 0 else torch.mean(x_k, dim=0)
         mean_mean = (n_k * x_mean_k + self.mean_inv_cov_factor * self.mean_mean) / \

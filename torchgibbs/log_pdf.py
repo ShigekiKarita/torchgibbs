@@ -11,7 +11,7 @@ def dirichlet_log_pdf(pi, alpha):
 def normal_log_pdf(xs, means, cov):
     n_batch, n_dim = xs.size()
     n_component = means.size(0)
-    assert cov.nelement() == 1
+    assert isinstance(cov, float) or cov.nelement() == 1
     xs_ms = xs.unsqueeze(1) - means.unsqueeze(0)
     coeff = - n_dim * math.log(2 * math.pi) - math.log(cov)
     xms = xs_ms.view(n_batch * n_component, n_dim, 1)
